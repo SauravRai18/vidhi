@@ -24,7 +24,6 @@ class AuthService {
       firmName,
       role: role as any,
       tier: newFirm.plan,
-      isSetupComplete: false,
       lastLogin: Date.now(),
       usage: {
         researchCredits: role === 'Student' ? 50 : 500,

@@ -13,14 +13,11 @@ class RelationalDB {
     localStorage.setItem(this.prefix + table, JSON.stringify(data));
   }
 
+  // Session Helper
   getFirmId(): string {
     const s = localStorage.getItem('v_os_session');
     if (s) {
-      try { 
-        return JSON.parse(s).firmId || 'firm_0'; 
-      } catch (e) { 
-        return 'firm_0'; 
-      }
+      try { return JSON.parse(s).firmId; } catch (e) { return 'firm_0'; }
     }
     return 'firm_0';
   }
@@ -28,16 +25,12 @@ class RelationalDB {
   getUserId(): string {
     const s = localStorage.getItem('v_os_session');
     if (s) {
-      try { 
-        return JSON.parse(s).id || 'unknown'; 
-      } catch (e) { 
-        return 'unknown'; 
-      }
+      try { return JSON.parse(s).id; } catch (e) { return 'unknown'; }
     }
     return 'unknown';
   }
 
-  // Scoped Data Access
+  // REPOSITORIES
   get matters() { return this.scoped<Matter>('matters', this.getFirmId()); }
   get clients() { return this.scoped<Client>('clients', this.getFirmId()); }
   get documents() { return this.scoped<LegalDocument>('documents', this.getFirmId()); }
@@ -45,6 +38,7 @@ class RelationalDB {
   get hearings() { return this.scoped<Hearing>('hearings', this.getFirmId()); }
   get compliance_items() { return this.scoped<ComplianceItem>('compliance_items', this.getFirmId()); }
 
+  // Scoped Data Access (Relational Mock)
   getMatters() { return this.matters.all(); }
   saveMatter(m: Matter) { 
     this.matters.save(m); 
@@ -74,6 +68,11 @@ class RelationalDB {
   }
 
   saveDraft(d: Draft) { 
+    const existing = this.drafts.get(d.id);
+    if (existing) {
+      d.version = (existing.version || 1) + 1;
+      d.versions = [...(existing.versions || []), { version: existing.version, content: existing.content, createdAt: existing.updatedAt }];
+    }
     this.drafts.save(d); 
     this.log(d.firmId, this.getUserId(), "SAVE_DRAFT", { id: d.id, version: d.version });
   }
@@ -134,6 +133,7 @@ class RelationalDB {
     };
   }
 
+  // AUDIT LOGGING
   log(firmId: string, userId: string, action: string, metadata?: any) {
     const log: AuditLog = {
       id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -142,7 +142,7 @@ class RelationalDB {
       action,
       timestamp: Date.now(),
       metadata,
-      ipAddress: '127.0.0.1'
+      ipAddress: '127.0.0.1' // Simulated
     };
     const all = this.read<AuditLog>('audit_logs');
     all.unshift(log);

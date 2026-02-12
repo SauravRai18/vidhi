@@ -18,7 +18,7 @@ class ProductionAPI {
     const { firmId, usage } = this.authorize();
     
     const matters = db.scoped<Matter>('matters', firmId).all();
-    const drafts = db.scoped<Draft>('drafts', firmId).all();
+    const drafts = db.scoped<any>('drafts', firmId).all();
     const hearings = db.scoped<Hearing>('hearings', firmId).all();
     const compliance = db.scoped<ComplianceItem>('compliance_items', firmId).all();
     const auditLogs = db.platform.getAuditLogs(firmId);
@@ -37,6 +37,7 @@ class ProductionAPI {
     };
   }
 
+  // Fix: Add matters property for linking logic
   matters = {
     linkDocument: async (matterId: string, documentId: string) => {
       const { firmId } = this.authorize();
@@ -58,6 +59,7 @@ class ProductionAPI {
     }
   };
 
+  // Fix: Add founder property for platform monitoring
   founder = {
     getPlatformStats: async () => {
       this.authorize();

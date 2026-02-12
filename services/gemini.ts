@@ -1,177 +1,167 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { UserRole, JudgmentSummary } from "../types";
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { JudgmentSummary, UserRole } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const ROLE_SYSTEM_INSTRUCTIONS: Record<UserRole, string> = {
-  Citizen: `You are 'Vidhi Citizen AI', a simplified legal guide for the Indian public. 
-    Language: Extremely simple, avoid jargon, explain concepts like 'FIR' or 'Stay Order' in plain English.
-    Style: Step-by-step guidance. Be empathetic but professional. 
-    Disclaimer: Always mention you are not a lawyer.`,
-  
-  Student: `You are 'Vidhi Academic AI', a tutor for law students in India. 
-    Language: Academic, precise, reference Bare Acts (IPC/BNS, CrPC/BNSS, etc.).
-    Focus: Ratio Decidendi, legal maxims, constitutional interpretations.
-    Behavior: Help with case briefs, moot court research, and concept explanation.`,
-  
-  Junior_Advocate: `You are 'Vidhi Junior Associate AI'. 
-    Language: Professional, focus on court procedures and filing rules (High Court/District Rules).
-    Focus: Procedural compliance, drafting standard applications (Bail, Exemption, Adjournment).
-    Behavior: Be practical. Suggest strategy for the next hearing based on standard Indian practice.`,
-  
-  Senior_Advocate: `You are 'Vidhi Strategic Lead AI'. 
-    Language: Senior-level, high-precision, dense with citations (SCC, AIR).
-    Focus: High-stakes strategy, finding distinguishing factors in precedents, strategic constitutional arguments.
-    Behavior: Minimal fluff. High reasoning budget. Strategic and cynical analysis of counter-arguments.`,
-  
-  Startup_Founder: `You are 'Vidhi Business Legal AI'. 
-    Language: Business-friendly, actionable, focus on ROI and risk mitigation.
-    Focus: Contract risks (indemnity, liability), GST/ROC compliance, labor laws.
-    Behavior: Summarize documents in 'Founder English'. Highlight clauses that need negotiation.`,
-  
-  In_House_Counsel: `You are 'Vidhi Corporate Legal Ops AI'. 
-    Language: Enterprise, focus on governance, auditability, and exposure.
-    Focus: External counsel management, litigation tracking, policy alignment.
-    Behavior: Efficient, summary-oriented, audit-ready outputs.`,
+const getPersonaPrompt = (role: UserRole) => {
+  const base = `ROLE: Principal Legal Architect & Senior Advocate (India). JURISDICTION: India. 
+  STRICTLY MAPPING: Use BNS/BNSS/BSA for criminal advice. 
+  CITATION STYLE: Cite Case Name, Citation (SCC/AIR), Court.`;
 
-  Admin: "You are the system administrator bot.",
-  Founder: "You are the platform architect bot."
+  switch(role) {
+    case 'Citizen':
+      return `${base} TONE: Extremely simple, empathetic, plain English. Avoid complex Latin terms. Focus on immediate steps like FIR, Consumer Complaint, or Rent issues.`;
+    case 'Student':
+      return `${base} TONE: Academic, detailed, pedagogical. Explain the 'Why' behind ratios. Reference landmark precedents clearly.`;
+    case 'Startup_Founder':
+      return `${base} TONE: Business-centric, risk-focused. Analyze contracts for indemnity, liability, and GST compliance. Focus on ROC and Labour law obligations.`;
+    case 'Junior_Advocate':
+      return `${base} TONE: Procedural, instructional. Explain HOW to file, which registry to approach, and standard drafting objections.`;
+    default:
+      return `${base} TONE: Professional, court-grade, conservative. Every response MUST include the footer:
+      [CONFIDENCE_SCORE]: {number}%
+      [LEGAL_BASIS]: {statutory grounding}`;
+  }
 };
 
-export const getAdvancedResearchStream = async (history: any[], query: string, role: UserRole, contexts?: string[]) => {
-  const instruction = ROLE_SYSTEM_INSTRUCTIONS[role] || ROLE_SYSTEM_INSTRUCTIONS.Senior_Advocate;
-  const contextText = contexts ? `CONTEXT DOCUMENTS:\n${contexts.join('\n\n')}\n\n` : '';
-  
+export const getAdvancedResearchStream = async (
+  history: { role: string; text: string }[],
+  query: string,
+  role: UserRole = 'Senior_Advocate',
+  contexts?: string[]
+) => {
+  const contextText = contexts?.join('\n\n') || 'No specific case file context.';
+
   return await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview',
     contents: [
-      ...history.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
-      { role: 'user', parts: [{ text: `${contextText}QUERY: ${query}\n\nConclude response with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.` }] }
+      ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.text }] })),
+      { role: 'user', parts: [{ text: `[QUERY]: ${query}\n[CONTEXT]: ${contextText}` }] }
     ],
-    config: { 
-      systemInstruction: instruction,
-      tools: [{ googleSearch: {} }] 
-    }
-  });
-};
-
-export const analyzeDocumentAI = async (text: string, type: string, role: UserRole) => {
-  const prompt = `Analyze this ${type} for a ${role}. 
-    Identify: 1. Core Risks 2. Statutory Deadlines 3. Action Items 4. Plain English Summary. 
-    Format as structured Markdown.`;
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: prompt + "\n\nDOCUMENT TEXT:\n" + text,
-    config: { systemInstruction: ROLE_SYSTEM_INSTRUCTIONS[role] }
-  });
-  return response.text;
-};
-
-export const generateStandardDraft = async (data: any, role: UserRole) => {
-  const prompt = `Generate a formal legal draft based on: ${JSON.stringify(data)}. Follow professional Indian court formatting.`;
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: prompt,
-    config: { systemInstruction: ROLE_SYSTEM_INSTRUCTIONS[role] }
-  });
-  return response.text;
-};
-
-// Fix for analyzeJudgmentEnterprise
-export const analyzeJudgmentEnterprise = async (text: string): Promise<JudgmentSummary> => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Analyze the following Indian court judgment and extract structured details. 
-      Judgment text: ${text}`,
     config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          caseTitle: { type: Type.STRING },
-          facts: { type: Type.STRING },
-          issues: { type: Type.ARRAY, items: { type: Type.STRING } },
-          ratioDecidendi: { type: Type.STRING },
-          judgment: { type: Type.STRING },
-          argumentsPetitioner: { type: Type.STRING },
-          argumentsRespondent: { type: Type.STRING },
-          sectionsCited: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ["caseTitle", "facts", "issues", "ratioDecidendi", "judgment", "argumentsPetitioner", "argumentsRespondent", "sectionsCited"]
-      }
-    }
+      systemInstruction: getPersonaPrompt(role),
+      tools: [{ googleSearch: {} }],
+      temperature: 0.1,
+      thinkingConfig: { thinkingBudget: 32000 }
+    },
   });
-  return JSON.parse(response.text || '{}');
 };
 
-// Fix for generateEnterpriseDraft
-export const generateEnterpriseDraft = async (data: any) => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Generate a detailed legal draft based on: ${JSON.stringify(data)}. Follow strict Indian court norms and formatting.`,
-  });
-  return response.text;
-};
-
-// Fix for getReliefIntelligence
-export const getReliefIntelligence = async (details: string, court: string) => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Analyze the following case details and suggest statutory relief and strategy for ${court}. 
-      Details: ${details}`,
-  });
-  return response.text;
-};
-
-// Fix for studentExplainConcept
-export const studentExplainConcept = async (concept: string) => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Explain the legal concept '${concept}' in the context of Indian Law for a law student. Include landmark cases and relevant bare act sections.`,
-  });
-  return response.text;
-};
-
-// Fix for suggestLitigationStrategy
-export const suggestLitigationStrategy = async (facts: string, contexts: string[]) => {
-  const contextText = contexts.length > 0 ? `CONTEXT DOCUMENTS:\n${contexts.join('\n\n')}\n\n` : '';
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `${contextText}Suggest a detailed litigation strategy based on these facts: ${facts}\n\nConclude response with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.`,
-  });
-  return response.text;
-};
-
-// Fix for generateHearingBrief
-export const generateHearingBrief = async (title: string, facts: string, purpose: string, contexts: string[]) => {
-  const contextText = contexts.length > 0 ? `CONTEXT DOCUMENTS:\n${contexts.join('\n\n')}\n\n` : '';
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `${contextText}Generate a hearing brief for '${title}'. Purpose: ${purpose}. Factual Summary: ${facts}\n\nConclude response with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.`,
-  });
-  return response.text;
-};
-
-// Fix for reviewContractAI
 export const reviewContractAI = async (text: string) => {
+  const prompt = `Perform a high-fidelity risk audit on this Indian contract. 
+  IDENTIFY: (1) Ambiguous Clauses (2) Missing GST/Tax components (3) One-sided Indemnity (4) Jurisdiction conflicts. 
+  FORMAT: JSON for structured risk mapping.`;
+
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `Review the following contract for potential risks and GST compliance in India: ${text}`,
+    model: "gemini-3-pro-preview",
+    contents: [{ role: 'user', parts: [{ text: prompt + "\n\n" + text }] }],
     config: {
+      systemInstruction: getPersonaPrompt('Startup_Founder'),
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
           riskScore: { type: Type.NUMBER },
-          isGSTCompliant: { type: Type.BOOLEAN },
           risks: { type: Type.ARRAY, items: { type: Type.STRING } },
-          suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ["riskScore", "isGSTCompliant", "risks", "suggestions"]
+          suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+          isGSTCompliant: { type: Type.BOOLEAN }
+        }
       }
     }
   });
-  return JSON.parse(response.text || '{}');
+  return JSON.parse(response.text || "{}");
+};
+
+export const analyzeJudgmentEnterprise = async (text: string): Promise<JudgmentSummary | null> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: [{ role: 'user', parts: [{ text: `Analyze Judgment:\n${text}` }] }],
+      config: {
+        systemInstruction: getPersonaPrompt('Senior_Advocate'),
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            caseTitle: { type: Type.STRING },
+            facts: { type: Type.STRING },
+            issues: { type: Type.ARRAY, items: { type: Type.STRING } },
+            argumentsPetitioner: { type: Type.STRING },
+            argumentsRespondent: { type: Type.STRING },
+            judgment: { type: Type.STRING },
+            ratioDecidendi: { type: Type.STRING },
+            sectionsCited: { type: Type.ARRAY, items: { type: Type.STRING } }
+          }
+        }
+      }
+    });
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    return null;
+  }
+};
+
+// Fix: Implement missing generateEnterpriseDraft
+export const generateEnterpriseDraft = async (data: { type: string; parties: string; subject: string; details: string; court: string }) => {
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: [{ role: 'user', parts: [{ text: `Generate a formal court draft for ${data.type} in ${data.court}. Parties: ${data.parties}. Subject: ${data.subject}. Details: ${data.details}. Use BNS/BNSS/BSA if applicable.` }] }],
+    config: {
+      systemInstruction: getPersonaPrompt('Senior_Advocate'),
+      temperature: 0.2,
+    },
+  });
+  return response.text;
+};
+
+// Fix: Implement missing getReliefIntelligence
+export const getReliefIntelligence = async (details: string, court: string) => {
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: [{ role: 'user', parts: [{ text: `Provide statutory strategy and relief intelligence for: ${details} in ${court}. Cite relevant sections of BNS/BNSS/CPC.` }] }],
+    config: {
+      systemInstruction: getPersonaPrompt('Senior_Advocate'),
+    },
+  });
+  return response.text;
+};
+
+// Fix: Implement missing studentExplainConcept
+export const studentExplainConcept = async (concept: string) => {
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: [{ role: 'user', parts: [{ text: `Explain the legal concept: ${concept}. Provide landmark cases and explain the 'Why' behind the ratios.` }] }],
+    config: {
+      systemInstruction: getPersonaPrompt('Student'),
+    },
+  });
+  return response.text;
+};
+
+// Fix: Implement missing suggestLitigationStrategy
+export const suggestLitigationStrategy = async (facts: string, contexts?: string[]) => {
+  const contextText = contexts?.join('\n\n') || 'No specific case context.';
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: [{ role: 'user', parts: [{ text: `Suggest a litigation strategy for the following facts:\n${facts}\n\nContext:\n${contextText}` }] }],
+    config: {
+      systemInstruction: getPersonaPrompt('Senior_Advocate'),
+      thinkingConfig: { thinkingBudget: 16000 }
+    },
+  });
+  return response.text;
+};
+
+// Fix: Implement missing generateHearingBrief
+export const generateHearingBrief = async (title: string, facts: string, purpose: string, contexts?: string[]) => {
+  const contextText = contexts?.join('\n\n') || 'No specific case context.';
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: [{ role: 'user', parts: [{ text: `Generate a hearing brief for ${title}. Purpose: ${purpose}. Facts: ${facts}. Context: ${contextText}` }] }],
+    config: {
+      systemInstruction: getPersonaPrompt('Senior_Advocate'),
+    },
+  });
+  return response.text;
 };

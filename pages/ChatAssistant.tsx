@@ -114,13 +114,7 @@ const ChatAssistant: React.FC = () => {
     const docContexts = attachments.map(a => a.content);
 
     try {
-      // Fix: Passed Senior_Advocate role as default and docContexts as the 4th argument (contexts)
-      const stream = await getAdvancedResearchStream(
-        history, 
-        input, 
-        'Senior_Advocate', 
-        docContexts.length > 0 ? docContexts : undefined
-      );
+      const stream = await getAdvancedResearchStream(history, input, docContexts.length > 0 ? docContexts : undefined);
       let botResponse = "";
       const botMsgId = `bot_${Date.now()}`;
       
