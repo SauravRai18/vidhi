@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { UserRole, PracticeArea, CourtLevel } from '../types';
+import { UserRole, PracticeArea, CourtLevel, AppView } from '../types';
 
 interface PersonaOption {
   role: UserRole;
@@ -19,8 +19,9 @@ const personas: PersonaOption[] = [
 ];
 
 const PersonaSelector: React.FC<{ 
-  onSetupComplete: (data: any) => void 
-}> = ({ onSetupComplete }) => {
+  onSetupComplete: (data: any) => void,
+  setView: (view: AppView) => void
+}> = ({ onSetupComplete, setView }) => {
   const [step, setStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [metadata, setMetadata] = useState({
@@ -52,6 +53,15 @@ const PersonaSelector: React.FC<{
     <div className="min-h-full flex flex-col items-center justify-center p-6 sm:p-12 animate-in fade-in duration-700 max-w-6xl mx-auto">
       {step === 1 ? (
         <div className="w-full">
+          <div className="mb-8">
+            <button 
+              onClick={() => setView(AppView.LOGIN)}
+              className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 hover:text-indigo-600 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15 19l-7-7 7-7" strokeWidth={3}/></svg> 
+              Back to Login
+            </button>
+          </div>
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 legal-serif mb-4">Initialize Your Workspace</h2>
             <p className="text-slate-500 font-medium">Choose your professional path to calibrate the AI Legal Intelligence layer.</p>
@@ -126,6 +136,7 @@ const PersonaSelector: React.FC<{
                  {['District', 'High_Court', 'Supreme_Court', 'Tribunal'].map(lvl => (
                    <button
                      key={lvl}
+                     type="button"
                      onClick={() => setMetadata({...metadata, courtLevel: lvl as CourtLevel})}
                      className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${
                        metadata.courtLevel === lvl ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-slate-500 border-slate-100 hover:border-indigo-200'

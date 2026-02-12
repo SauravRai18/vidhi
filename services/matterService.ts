@@ -7,6 +7,7 @@ class MatterService {
   getMatters() { return db.getMatters(); }
   
   createClient(data: Partial<Client>): Client {
+    // Fixed: Removed createdAt and updatedAt from the literal because they aren't in the Client interface.
     const client: Client = {
       id: `cl_${Math.random().toString(36).substr(2, 9)}`,
       firmId: db.getFirmId(),
@@ -14,9 +15,7 @@ class MatterService {
       contactEmail: data.contactEmail,
       contactPhone: data.contactPhone,
       gstin: data.gstin,
-      type: data.type || 'Individual',
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+      type: data.type || 'Individual'
     };
     db.saveClient(client);
     return client;

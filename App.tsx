@@ -47,8 +47,21 @@ const App: React.FC = () => {
     }
   };
 
+  const isDashboardView = (view: AppView) => {
+    return [
+      AppView.PUBLIC_HOME,
+      AppView.STUDENT_HOME,
+      AppView.JUNIOR_HOME,
+      AppView.SENIOR_HOME,
+      AppView.STARTUP_HOME,
+      AppView.INHOUSE_HOME
+    ].includes(view);
+  };
+
   const handleLogin = (userData: User) => {
+    localStorage.setItem('v_os_session', JSON.stringify(userData));
     setUser(userData);
+    
     if (!userData.isSetupComplete) {
       setCurrentView(AppView.PERSONA_SELECTOR);
     } else {
@@ -71,7 +84,7 @@ const App: React.FC = () => {
   if (currentView === AppView.PERSONA_SELECTOR) {
     return (
       <div className="h-screen bg-slate-50 overflow-y-auto">
-        <PersonaSelector onSetupComplete={handleSetupComplete} />
+        <PersonaSelector onSetupComplete={handleSetupComplete} setView={navigateTo} />
       </div>
     );
   }
@@ -83,14 +96,23 @@ const App: React.FC = () => {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0 z-30 shadow-sm">
-           <div className="flex items-center space-x-6">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 sm:px-10 shrink-0 z-30 shadow-sm">
+           <div className="flex items-center space-x-4">
+              {!isDashboardView(currentView) && (
+                <button 
+                  onClick={() => user && navigateTo(getRoleHome(user.role))}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" strokeWidth={3} /></svg>
+                  Home
+                </button>
+              )}
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 sm:px-4 py-2 rounded-xl border border-slate-100 truncate max-w-[120px] sm:max-w-none">
                 {user?.role.replace('_', ' ')} Workspace
               </span>
            </div>
            <div className="flex items-center space-x-4">
-              <div className="text-right hidden sm:block">
+              <div className="text-right hidden md:block">
                  <p className="text-[10px] font-bold text-slate-900 leading-none">{user?.name}</p>
                  <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest mt-1">Enterprise Session</p>
               </div>
@@ -102,28 +124,19 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-10 bg-slate-50/50">
           <div className="max-w-7xl mx-auto h-full">
-            {/* Unified Home Delegate */}
-            {(currentView === AppView.PUBLIC_HOME || 
-              currentView === AppView.STUDENT_HOME || 
-              currentView === AppView.JUNIOR_HOME || 
-              currentView === AppView.SENIOR_HOME || 
-              currentView === AppView.STARTUP_HOME || 
-              currentView === AppView.INHOUSE_HOME) && (
+            {isDashboardView(currentView) && (
               <Dashboard user={user} setView={navigateTo} />
             )}
 
-            {/* Core Shared Tools */}
             {currentView === AppView.DOC_INTELLIGENCE && <Summarizer />}
             {currentView === AppView.DRAFTING_STUDIO && <DraftingRoom />}
             {currentView === AppView.RESEARCH_HUB && <ChatAssistant />}
 
-            {/* Role Specific Views */}
             {currentView === AppView.STUDENT_BARE_ACTS && <LearningHub />}
             {currentView === AppView.STUDENT_MOOT && <MootToolkit />}
             {currentView === AppView.INHOUSE_MATTERS && <MattersPage />}
             {currentView === AppView.JUNIOR_PROCEDURES && <BoardTracker />}
             
-            {/* General Pages */}
             {currentView === AppView.PROFILE && <Profile />}
             {currentView === AppView.SETTINGS && <Settings />}
             {currentView === AppView.PRIVACY && <Privacy />}

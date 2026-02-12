@@ -249,7 +249,6 @@ const MatterDetail: React.FC<{ matter: Matter, onBack: () => void }> = ({ matter
   const [hearings, setHearings] = useState<Hearing[]>([]);
   const [activeTab, setActiveTab] = useState<'Dossier' | 'Evidence' | 'Pleadings' | 'Board'>('Dossier');
   
-  // Modals for linking existing files
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showLinkDocModal, setShowLinkDocModal] = useState(false);
   const [showLinkDraftModal, setShowLinkDraftModal] = useState(false);
@@ -556,7 +555,6 @@ const MatterDetail: React.FC<{ matter: Matter, onBack: () => void }> = ({ matter
          )}
       </div>
 
-      {/* Initialize Draft Modal */}
       {showDraftModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 sm:p-10 space-y-8 border border-white/20 animate-in zoom-in-95">
@@ -586,7 +584,6 @@ const MatterDetail: React.FC<{ matter: Matter, onBack: () => void }> = ({ matter
         </div>
       )}
 
-      {/* Link Existing Document Modal */}
       {showLinkDocModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 border border-white/20">
@@ -618,7 +615,6 @@ const MatterDetail: React.FC<{ matter: Matter, onBack: () => void }> = ({ matter
         </div>
       )}
 
-      {/* Link Existing Draft Modal */}
       {showLinkDraftModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 border border-white/20">

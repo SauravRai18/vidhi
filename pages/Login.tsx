@@ -16,14 +16,17 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
     
     // Simulate different roles based on email for dev testing
     const isAdmin = email.includes('admin');
+    const isStudent = email.includes('student');
 
     onLogin({
-      id: 'usr_789',
-      name: isAdmin ? 'System Administrator' : 'Adv. Rajesh Kumar',
-      email: email || 'rajesh@kumar-associates.com',
-      firmName: isAdmin ? 'Vidhi AI Corporate' : 'Kumar & Associates',
-      role: isAdmin ? 'Admin' : 'Advocate',
+      id: `usr_${Math.random().toString(36).substr(2, 9)}`,
+      name: isAdmin ? 'System Administrator' : isStudent ? 'Rahul Student' : 'Adv. Rajesh Kumar',
+      email: email || 'user@vidhi.ai',
+      firmName: isAdmin ? 'Vidhi AI Corporate' : isStudent ? 'NLSIU' : 'Kumar & Associates',
+      firmId: isAdmin ? 'firm_admin' : isStudent ? 'firm_nlsiu' : 'firm_rajesh',
+      role: isAdmin ? 'Admin' : isStudent ? 'Student' : 'Senior_Advocate',
       tier: 'PRO',
+      isSetupComplete: true, // Default to true to allow immediate dashboard access in demo
       usage: {
         researchCredits: 42,
         draftsCreated: 156,
