@@ -1,0 +1,8 @@
+{
+  "name": "Vidhi AI Enterprise",
+  "description": "Enterprise Operating System for Indian Advocates. Grounded research, BNS protocol mapping, and constitutional intelligence.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
