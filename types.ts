@@ -1,6 +1,6 @@
 
 export enum AppView {
-  // General
+  // General & Auth
   LOGIN = 'LOGIN',
   SIGNUP = 'SIGNUP',
   PERSONA_SELECTOR = 'PERSONA_SELECTOR',
@@ -12,37 +12,40 @@ export enum AppView {
   ADMIN = 'ADMIN',
   FOUNDER_ADMIN = 'FOUNDER_ADMIN',
 
-  // Shared Core Tools
+  // Core Intelligence Modules (Shared but behavior varies)
   DOC_INTELLIGENCE = 'DOC_INTELLIGENCE',
-  RESEARCH_HUB = 'RESEARCH_HUB',
   DRAFTING_STUDIO = 'DRAFTING_STUDIO',
-  LEARNING_HUB = 'LEARNING_HUB',
-  SUMMARIZE = 'SUMMARIZE',
-  MOOT_TOOLKIT = 'MOOT_TOOLKIT',
-  CHAT = 'CHAT',
+  RESEARCH_HUB = 'RESEARCH_HUB',
 
-  // Role-Specific Views (Surfaced via Sidebar)
+  // PUBLIC / INDIVIDUAL Workspace
   PUBLIC_HOME = 'PUBLIC_HOME',
-  PUBLIC_HELP = 'PUBLIC_HELP',
+  PUBLIC_CASE_TRACKER = 'PUBLIC_CASE_TRACKER',
   PUBLIC_DOCS = 'PUBLIC_DOCS',
-  
+
+  // LAW STUDENT Workspace
   STUDENT_HOME = 'STUDENT_HOME',
-  STUDENT_BRIEFS = 'STUDENT_BRIEFS',
   STUDENT_BARE_ACTS = 'STUDENT_BARE_ACTS',
   STUDENT_MOOT = 'STUDENT_MOOT',
+  STUDENT_BRIEFS = 'STUDENT_BRIEFS',
 
+  // JUNIOR ADVOCATE Workspace
   JUNIOR_HOME = 'JUNIOR_HOME',
   JUNIOR_PROCEDURES = 'JUNIOR_PROCEDURES',
   JUNIOR_FILING = 'JUNIOR_FILING',
+  JUNIOR_HEARING_PREP = 'JUNIOR_HEARING_PREP',
 
+  // SENIOR ADVOCATE / LAW FIRM Workspace
   SENIOR_HOME = 'SENIOR_HOME',
   SENIOR_STRATEGY = 'SENIOR_STRATEGY',
+  SENIOR_TEAM = 'SENIOR_TEAM',
   SENIOR_INSIGHTS = 'SENIOR_INSIGHTS',
 
+  // MSME / STARTUP Workspace
   STARTUP_HOME = 'STARTUP_HOME',
   STARTUP_COMPLIANCE = 'STARTUP_COMPLIANCE',
-  STARTUP_CONTRACTS = 'STARTUP_CONTRACTS',
+  STARTUP_CONTRACT_AI = 'STARTUP_CONTRACT_AI',
 
+  // IN-HOUSE LEGAL Workspace
   INHOUSE_HOME = 'INHOUSE_HOME',
   INHOUSE_MATTERS = 'INHOUSE_MATTERS',
   INHOUSE_EXPOSURE = 'INHOUSE_EXPOSURE'
@@ -58,10 +61,10 @@ export type UserRole =
   | 'Admin' 
   | 'Founder';
 
+export type SubscriptionTier = 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE' | 'FOUNDER';
+
 export type PracticeArea = 'Criminal' | 'Civil' | 'Corporate' | 'Family' | 'Taxation' | 'GST' | 'Labour' | 'Intellectual Property';
 export type CourtLevel = 'District' | 'High_Court' | 'Supreme_Court' | 'Tribunal';
-
-export type SubscriptionTier = 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE' | 'FOUNDER';
 
 export interface User {
   id: string;
@@ -75,15 +78,24 @@ export interface User {
   practiceArea?: string;
   courtLevel?: string;
   isSetupComplete: boolean;
+  avatar?: string;
+  phone?: string;
+  collegeName?: string;
+  lastLogin?: number;
   usage: {
     researchCredits: number;
     draftsCreated: number;
     maxResearchCredits: number;
   };
-  lastLogin?: number;
-  collegeName?: string;
-  avatar?: string;
-  phone?: string;
+}
+
+export interface Firm {
+  id: string;
+  name: string;
+  plan: SubscriptionTier;
+  ownerId: string;
+  createdAt: number;
+  credits: number;
 }
 
 export interface Client {
@@ -109,8 +121,8 @@ export interface Matter {
   updatedAt: number;
   createdAt: number;
   lastAccessedAt: number;
-  tags: string[];
   nextHearingDate?: number;
+  tags: string[];
 }
 
 export interface LegalDocument {
@@ -130,12 +142,43 @@ export interface Draft {
   firmId: string;
   matterId?: string;
   title: string;
-  type?: string;
   content: string;
+  type?: string;
   version: number;
-  versions?: { version: number; content: string; createdAt: number }[];
-  createdAt: number;
   updatedAt: number;
+  createdAt?: number;
+  versions?: { version: number; content: string; createdAt: number }[];
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  content: string;
+  timestamp: number;
+  firmId: string;
+  matterId: string;
+  confidenceScore?: number;
+  legalBasisSummary?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  firmId: string;
+  userId: string;
+  action: string;
+  timestamp: number;
+  metadata?: any;
+  ipAddress?: string;
+}
+
+export interface ComplianceItem {
+  id: string;
+  firmId: string;
+  title: string;
+  type: 'Limitation' | 'Statutory' | 'Registry' | 'Professional';
+  dueDate: number;
+  status: 'Critical' | 'Pending' | 'Completed';
+  description: string;
 }
 
 export interface Hearing {
@@ -149,54 +192,6 @@ export interface Hearing {
   courtRoom?: string;
 }
 
-export interface AuditLog {
-  id: string;
-  firmId: string;
-  userId: string;
-  action: string;
-  timestamp: number;
-  metadata?: any;
-  ipAddress: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'model';
-  firmId: string;
-  matterId: string;
-  content: string;
-  timestamp: number;
-  confidenceScore?: number;
-  legalBasisSummary?: string;
-}
-
-export interface ComplianceItem {
-  id: string;
-  firmId: string;
-  title: string;
-  type: 'Limitation' | 'Statutory' | 'Registry' | 'Professional';
-  dueDate: number;
-  status: 'Critical' | 'Pending' | 'Completed';
-  description: string;
-}
-
-export interface LearningPath {
-  id: string;
-  subject: string;
-  progress: number;
-  totalModules: number;
-  lastTopic: string;
-}
-
-export interface Firm {
-  id: string;
-  name: string;
-  plan: SubscriptionTier;
-  ownerId: string;
-  createdAt: number;
-  credits: number;
-}
-
 export interface JudgmentSummary {
   caseTitle: string;
   facts: string;
@@ -206,4 +201,12 @@ export interface JudgmentSummary {
   argumentsPetitioner: string;
   argumentsRespondent: string;
   sectionsCited: string[];
+}
+
+export interface LearningPath {
+  id: string;
+  subject: string;
+  progress: number;
+  totalModules: number;
+  lastTopic: string;
 }

@@ -42,10 +42,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, setView }) =>
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         {[
-          { label: 'Concept Explainer', icon: '📖', view: AppView.LEARNING_HUB, desc: 'Query AI Mentor' },
-          { label: 'Case Summaries', icon: '📝', view: AppView.SUMMARIZE, desc: 'Ratio extractions' },
-          { label: 'Moot Toolkit', icon: '⚖️', view: AppView.MOOT_TOOLKIT, desc: 'Prep memorials' },
-          { label: 'Research Bot', icon: '🤖', view: AppView.CHAT, desc: 'AI research node' },
+          { label: 'Concept Explainer', icon: '📖', view: AppView.STUDENT_BARE_ACTS, desc: 'Query AI Mentor' },
+          { label: 'Case Summaries', icon: '📝', view: AppView.DOC_INTELLIGENCE, desc: 'Ratio extractions' },
+          { label: 'Moot Toolkit', icon: '⚖️', view: AppView.STUDENT_MOOT, desc: 'Prep memorials' },
+          { label: 'Research Bot', icon: '🤖', view: AppView.RESEARCH_HUB, desc: 'AI research node' },
         ].map(action => (
           <button
             key={action.label}
@@ -69,7 +69,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, setView }) =>
              </div>
              <div className="p-6 sm:p-10 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                 {paths.map(path => (
-                  <div key={path.id} className="p-6 sm:p-8 bg-slate-50 rounded-2xl sm:rounded-[2.5rem] border border-slate-100 hover:border-indigo-300 transition-all group cursor-pointer" onClick={() => setView(AppView.LEARNING_HUB)}>
+                  <div key={path.id} className="p-6 sm:p-8 bg-slate-50 rounded-2xl sm:rounded-[2.5rem] border border-slate-100 hover:border-indigo-300 transition-all group cursor-pointer" onClick={() => setView(AppView.STUDENT_BARE_ACTS)}>
                     <div className="flex justify-between items-start mb-4 sm:mb-6">
                       <h5 className="font-bold text-slate-900 text-lg sm:text-xl leading-tight truncate mr-2">{path.subject}</h5>
                       <span className="text-[9px] sm:text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl uppercase tracking-widest shrink-0">{path.progress}%</span>
@@ -112,7 +112,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, setView }) =>
               <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-900 uppercase tracking-widest mb-6 sm:mb-8 flex items-center">
                  <span className="h-4 w-1 bg-amber-500 rounded-full mr-3 sm:mr-4"></span> Landmark Ingestion
               </h4>
-              <div className="p-5 sm:p-6 bg-slate-50 rounded-2xl sm:rounded-3xl border border-slate-100 group hover:border-indigo-100 transition-colors cursor-pointer" onClick={() => setView(AppView.SUMMARIZE)}>
+              <div className="p-5 sm:p-6 bg-slate-50 rounded-2xl sm:rounded-3xl border border-slate-100 group hover:border-indigo-100 transition-colors cursor-pointer" onClick={() => setView(AppView.DOC_INTELLIGENCE)}>
                 <h5 className="font-bold text-slate-900 mb-2 sm:mb-3 group-hover:text-indigo-600 transition-colors leading-tight text-sm sm:text-base">S.R. Bommai v. Union of India</h5>
                 <p className="text-[9px] sm:text-[10px] text-slate-500 leading-relaxed mb-4 sm:mb-6 font-medium">Critical analysis of Art. 356 and Federalism. Basic Structure doctrine revisited.</p>
                 <button className="text-indigo-600 font-bold text-[8px] sm:text-[10px] uppercase tracking-widest hover:underline decoration-indigo-200">Start Analysis →</button>

@@ -4,91 +4,50 @@ import { UserRole, JudgmentSummary } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const SYSTEM_PROMPTS: Record<UserRole, string> = {
-  Citizen: `ROLE: Empathetic Legal Guide for Indian Citizens. 
-    LANGUAGE: Simple, non-technical English/Hindi. No jargon. 
-    GOAL: Explain rights, procedures (FIR, Consumer Court), and next steps. 
-    LIMITS: Do not give advice, only process and procedural guidance.`,
+const ROLE_SYSTEM_INSTRUCTIONS: Record<UserRole, string> = {
+  Citizen: `You are 'Vidhi Citizen AI', a simplified legal guide for the Indian public. 
+    Language: Extremely simple, avoid jargon, explain concepts like 'FIR' or 'Stay Order' in plain English.
+    Style: Step-by-step guidance. Be empathetic but professional. 
+    Disclaimer: Always mention you are not a lawyer.`,
   
-  Student: `ROLE: Academic AI Tutor for Indian Law Students. 
-    STYLE: Educational, concept-heavy, cites Bare Acts and Landmark Cases (SCC/AIR). 
-    FOCUS: Ratio Decidendi, legal maxims, exam-oriented explanations.`,
+  Student: `You are 'Vidhi Academic AI', a tutor for law students in India. 
+    Language: Academic, precise, reference Bare Acts (IPC/BNS, CrPC/BNSS, etc.).
+    Focus: Ratio Decidendi, legal maxims, constitutional interpretations.
+    Behavior: Help with case briefs, moot court research, and concept explanation.`,
   
-  Junior_Advocate: `ROLE: AI Junior Associate for Indian Advocates. 
-    STYLE: Procedural, practical. 
-    FOCUS: Court rules, drafting formats, registry objections, filing steps. Use BNS/BNSS/BSA for criminal matters.`,
+  Junior_Advocate: `You are 'Vidhi Junior Associate AI'. 
+    Language: Professional, focus on court procedures and filing rules (High Court/District Rules).
+    Focus: Procedural compliance, drafting standard applications (Bail, Exemption, Adjournment).
+    Behavior: Be practical. Suggest strategy for the next hearing based on standard Indian practice.`,
   
-  Senior_Advocate: `ROLE: Strategic Legal Research Architect. 
-    STYLE: High-precision, strategic, heavy on citations. 
-    FOCUS: Tactical pivot points, finding distinguishing precedents, high-level constitutional mapping.`,
+  Senior_Advocate: `You are 'Vidhi Strategic Lead AI'. 
+    Language: Senior-level, high-precision, dense with citations (SCC, AIR).
+    Focus: High-stakes strategy, finding distinguishing factors in precedents, strategic constitutional arguments.
+    Behavior: Minimal fluff. High reasoning budget. Strategic and cynical analysis of counter-arguments.`,
   
-  Startup_Founder: `ROLE: Business Legal Risk Analyst. 
-    STYLE: Concise, risk-focused, commercial. 
-    FOCUS: GST compliance, ROC filings, one-sided indemnity clauses, IP protection.`,
+  Startup_Founder: `You are 'Vidhi Business Legal AI'. 
+    Language: Business-friendly, actionable, focus on ROI and risk mitigation.
+    Focus: Contract risks (indemnity, liability), GST/ROC compliance, labor laws.
+    Behavior: Summarize documents in 'Founder English'. Highlight clauses that need negotiation.`,
   
-  In_House_Counsel: `ROLE: Corporate Legal Operations Intelligence. 
-    STYLE: Governance and risk-aware. 
-    FOCUS: Matter tracking, external counsel audit, policy alignment, cost exposure.`,
+  In_House_Counsel: `You are 'Vidhi Corporate Legal Ops AI'. 
+    Language: Enterprise, focus on governance, auditability, and exposure.
+    Focus: External counsel management, litigation tracking, policy alignment.
+    Behavior: Efficient, summary-oriented, audit-ready outputs.`,
 
-  Admin: "ROLE: Platform Quality Control.",
-  Founder: "ROLE: System Architect."
+  Admin: "You are the system administrator bot.",
+  Founder: "You are the platform architect bot."
 };
-
-export const runRoleSpecificChat = async (role: UserRole, history: any[], query: string, context?: string) => {
-  const model = 'gemini-3-flash-preview';
-  const instruction = SYSTEM_PROMPTS[role] || SYSTEM_PROMPTS.Citizen;
-
-  const contents = [
-    ...history.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
-    { role: 'user', parts: [{ text: context ? `CONTEXT:\n${context}\n\nQUERY: ${query}` : query }] }
-  ];
-
-  return await ai.models.generateContent({
-    model,
-    contents,
-    config: { systemInstruction: instruction, temperature: 0.1 }
-  });
-};
-
-export const analyzeDocumentAI = async (role: UserRole, text: string, type: string) => {
-  const model = 'gemini-3-pro-preview';
-  const prompt = `Analyze this ${type} for a ${role}. 
-    Identify: 
-    1. Key Legal Issues
-    2. Crucial Dates/Deadlines
-    3. Statutory References
-    4. Suggested Actions.
-    Return output in structured Markdown.`;
-
-  const response = await ai.models.generateContent({
-    model,
-    contents: [{ role: 'user', parts: [{ text: prompt + "\n\nTEXT:\n" + text }] }],
-    config: { systemInstruction: SYSTEM_PROMPTS[role] }
-  });
-  return response.text;
-};
-
-export const generateDraftAI = async (role: UserRole, data: any) => {
-  const model = 'gemini-3-pro-preview';
-  const response = await ai.models.generateContent({
-    model,
-    contents: [{ role: 'user', parts: [{ text: `Generate a formal draft for: ${JSON.stringify(data)}. Use professional Indian legal formatting.` }] }],
-    config: { systemInstruction: SYSTEM_PROMPTS[role] }
-  });
-  return response.text;
-};
-
-// Added missing functions as requested by file errors
 
 export const getAdvancedResearchStream = async (history: any[], query: string, role: UserRole, contexts?: string[]) => {
-  const instruction = SYSTEM_PROMPTS[role] || SYSTEM_PROMPTS.Senior_Advocate;
-  const contextText = contexts ? `CONTEXT:\n${contexts.join('\n\n')}\n\n` : '';
+  const instruction = ROLE_SYSTEM_INSTRUCTIONS[role] || ROLE_SYSTEM_INSTRUCTIONS.Senior_Advocate;
+  const contextText = contexts ? `CONTEXT DOCUMENTS:\n${contexts.join('\n\n')}\n\n` : '';
   
   return await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
     contents: [
       ...history.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
-      { role: 'user', parts: [{ text: `${contextText}QUERY: ${query}\n\nProvide response and conclude with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.` }] }
+      { role: 'user', parts: [{ text: `${contextText}QUERY: ${query}\n\nConclude response with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.` }] }
     ],
     config: { 
       systemInstruction: instruction,
@@ -97,10 +56,35 @@ export const getAdvancedResearchStream = async (history: any[], query: string, r
   });
 };
 
+export const analyzeDocumentAI = async (text: string, type: string, role: UserRole) => {
+  const prompt = `Analyze this ${type} for a ${role}. 
+    Identify: 1. Core Risks 2. Statutory Deadlines 3. Action Items 4. Plain English Summary. 
+    Format as structured Markdown.`;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: prompt + "\n\nDOCUMENT TEXT:\n" + text,
+    config: { systemInstruction: ROLE_SYSTEM_INSTRUCTIONS[role] }
+  });
+  return response.text;
+};
+
+export const generateStandardDraft = async (data: any, role: UserRole) => {
+  const prompt = `Generate a formal legal draft based on: ${JSON.stringify(data)}. Follow professional Indian court formatting.`;
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: prompt,
+    config: { systemInstruction: ROLE_SYSTEM_INSTRUCTIONS[role] }
+  });
+  return response.text;
+};
+
+// Fix for analyzeJudgmentEnterprise
 export const analyzeJudgmentEnterprise = async (text: string): Promise<JudgmentSummary> => {
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: [{ role: 'user', parts: [{ text: `Analyze this judgment and return JSON format:\n${text}` }] }],
+    contents: `Analyze the following Indian court judgment and extract structured details. 
+      Judgment text: ${text}`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -122,54 +106,59 @@ export const analyzeJudgmentEnterprise = async (text: string): Promise<JudgmentS
   return JSON.parse(response.text || '{}');
 };
 
+// Fix for generateEnterpriseDraft
 export const generateEnterpriseDraft = async (data: any) => {
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: [{ role: 'user', parts: [{ text: `Generate a formal legal draft based on: ${JSON.stringify(data)}` }] }],
-    config: { systemInstruction: SYSTEM_PROMPTS.Senior_Advocate }
+    contents: `Generate a detailed legal draft based on: ${JSON.stringify(data)}. Follow strict Indian court norms and formatting.`,
   });
   return response.text;
 };
 
+// Fix for getReliefIntelligence
 export const getReliefIntelligence = async (details: string, court: string) => {
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: [{ role: 'user', parts: [{ text: `Analyze relief for: ${details} in ${court}` }] }],
+    contents: `Analyze the following case details and suggest statutory relief and strategy for ${court}. 
+      Details: ${details}`,
   });
   return response.text;
 };
 
+// Fix for studentExplainConcept
 export const studentExplainConcept = async (concept: string) => {
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: [{ role: 'user', parts: [{ text: `Explain the legal concept: ${concept}` }] }],
-    config: { systemInstruction: SYSTEM_PROMPTS.Student }
+    model: 'gemini-3-pro-preview',
+    contents: `Explain the legal concept '${concept}' in the context of Indian Law for a law student. Include landmark cases and relevant bare act sections.`,
   });
   return response.text;
 };
 
-export const suggestLitigationStrategy = async (query: string, contexts?: string[]) => {
+// Fix for suggestLitigationStrategy
+export const suggestLitigationStrategy = async (facts: string, contexts: string[]) => {
+  const contextText = contexts.length > 0 ? `CONTEXT DOCUMENTS:\n${contexts.join('\n\n')}\n\n` : '';
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: [{ role: 'user', parts: [{ text: `Suggest strategy for: ${query}${contexts ? ` using context: ${contexts.join('\n')}` : ''}\n\nProvide response and conclude with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.` }] }],
-    config: { systemInstruction: SYSTEM_PROMPTS.Senior_Advocate }
+    contents: `${contextText}Suggest a detailed litigation strategy based on these facts: ${facts}\n\nConclude response with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.`,
   });
   return response.text;
 };
 
-export const generateHearingBrief = async (caseTitle: string, facts: string, purpose: string, contexts?: string[]) => {
+// Fix for generateHearingBrief
+export const generateHearingBrief = async (title: string, facts: string, purpose: string, contexts: string[]) => {
+  const contextText = contexts.length > 0 ? `CONTEXT DOCUMENTS:\n${contexts.join('\n\n')}\n\n` : '';
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: [{ role: 'user', parts: [{ text: `Generate hearing brief for ${caseTitle}. Purpose: ${purpose}. Facts: ${facts}${contexts ? ` using context: ${contexts.join('\n')}` : ''}\n\nProvide response and conclude with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.` }] }],
-    config: { systemInstruction: SYSTEM_PROMPTS.Senior_Advocate }
+    contents: `${contextText}Generate a hearing brief for '${title}'. Purpose: ${purpose}. Factual Summary: ${facts}\n\nConclude response with [CONFIDENCE_SCORE]: X% and [LEGAL_BASIS]: summary.`,
   });
   return response.text;
 };
 
+// Fix for reviewContractAI
 export const reviewContractAI = async (text: string) => {
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: [{ role: 'user', parts: [{ text: `Review this contract and return JSON:\n${text}` }] }],
+    contents: `Review the following contract for potential risks and GST compliance in India: ${text}`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {

@@ -6,11 +6,18 @@ import Sidebar from './components/Sidebar';
 import LoginPage from './pages/Login';
 import PersonaSelector from './pages/PersonaSelector';
 import Dashboard from './pages/Dashboard';
-import DocumentIntelligence from './pages/Summarizer';
-import DraftingStudio from './pages/DraftingRoom';
 import ChatAssistant from './pages/ChatAssistant';
+import Summarizer from './pages/Summarizer';
+import DraftingRoom from './pages/DraftingRoom';
 import MattersPage from './pages/Matters';
 import BoardTracker from './pages/BoardTracker';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import Privacy from './pages/Privacy';
+import Legal from './pages/Legal';
+import Billing from './pages/Billing';
+import LearningHub from './pages/LearningHub';
+import MootToolkit from './pages/MootToolkit';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.LOGIN);
@@ -23,20 +30,20 @@ const App: React.FC = () => {
       if (!session.isSetupComplete) {
         setCurrentView(AppView.PERSONA_SELECTOR);
       } else {
-        setCurrentView(getDefaultViewForRole(session.role));
+        setCurrentView(getRoleHome(session.role));
       }
     }
   }, []);
 
-  const getDefaultViewForRole = (role: UserRole): AppView => {
-    switch (role) {
+  const getRoleHome = (role: UserRole): AppView => {
+    switch(role) {
       case 'Citizen': return AppView.PUBLIC_HOME;
       case 'Student': return AppView.STUDENT_HOME;
       case 'Junior_Advocate': return AppView.JUNIOR_HOME;
       case 'Senior_Advocate': return AppView.SENIOR_HOME;
       case 'Startup_Founder': return AppView.STARTUP_HOME;
       case 'In_House_Counsel': return AppView.INHOUSE_HOME;
-      default: return AppView.LOGIN;
+      default: return AppView.PUBLIC_HOME;
     }
   };
 
@@ -45,18 +52,15 @@ const App: React.FC = () => {
     if (!userData.isSetupComplete) {
       setCurrentView(AppView.PERSONA_SELECTOR);
     } else {
-      setCurrentView(getDefaultViewForRole(userData.role));
+      setCurrentView(getRoleHome(userData.role));
     }
   };
 
   const handleSetupComplete = async (metadata: any) => {
     if (user) {
-      const updated = await authService.updateProfile({ 
-        ...metadata, 
-        isSetupComplete: true 
-      });
+      const updated = await authService.updateProfile({ ...metadata, isSetupComplete: true });
       setUser(updated);
-      setCurrentView(getDefaultViewForRole(updated.role));
+      setCurrentView(getRoleHome(updated.role));
     }
   };
 
@@ -65,59 +69,66 @@ const App: React.FC = () => {
   if (currentView === AppView.LOGIN) return <LoginPage onLogin={handleLogin} />;
   
   if (currentView === AppView.PERSONA_SELECTOR) {
-    return <div className="h-screen bg-slate-50"><PersonaSelector onSetupComplete={handleSetupComplete} /></div>;
+    return (
+      <div className="h-screen bg-slate-50 overflow-y-auto">
+        <PersonaSelector onSetupComplete={handleSetupComplete} />
+      </div>
+    );
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50">
-      <div className="w-80 shrink-0">
-        <Sidebar 
-          currentView={currentView} 
-          setView={navigateTo} 
-          user={user} 
-          onLogout={() => { authService.logout(); setUser(null); setCurrentView(AppView.LOGIN); }} 
-        />
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-inter text-slate-900">
+      <div className="w-80 shrink-0 hidden lg:block">
+        <Sidebar currentView={currentView} setView={navigateTo} user={user} onLogout={() => {authService.logout(); setUser(null); setCurrentView(AppView.LOGIN);}} />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0">
-           <div className="flex items-center space-x-4">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
-                {user?.role.replace('_', ' ')} MODE
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0 z-30 shadow-sm">
+           <div className="flex items-center space-x-6">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                {user?.role.replace('_', ' ')} Workspace
               </span>
            </div>
-           <div className="flex items-center space-x-3">
-              <div className="text-right">
-                 <p className="text-[10px] font-bold text-slate-900">{user?.name}</p>
-                 <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest">Active Session</p>
+           <div className="flex items-center space-x-4">
+              <div className="text-right hidden sm:block">
+                 <p className="text-[10px] font-bold text-slate-900 leading-none">{user?.name}</p>
+                 <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest mt-1">Enterprise Session</p>
               </div>
-              <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs border border-slate-200">
-                 {user?.name.charAt(0)}
-              </div>
+              <button onClick={() => setCurrentView(AppView.PROFILE)} className="h-10 w-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-indigo-600 font-bold hover:bg-slate-200 transition-colors">
+                 {user?.name?.charAt(0)}
+              </button>
            </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-10 bg-slate-50/50">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-10 bg-slate-50/50">
           <div className="max-w-7xl mx-auto h-full">
-            {/* Generic Core Modules with Role Context */}
-            {currentView === AppView.DOC_INTELLIGENCE && <DocumentIntelligence />}
-            {currentView === AppView.DRAFTING_STUDIO && <DraftingStudio />}
-            {currentView === AppView.RESEARCH_HUB && <ChatAssistant />}
-            
-            {/* Dynamic Role-Based Dashboards */}
-            {(
-              currentView === AppView.PUBLIC_HOME || 
+            {/* Unified Home Delegate */}
+            {(currentView === AppView.PUBLIC_HOME || 
               currentView === AppView.STUDENT_HOME || 
               currentView === AppView.JUNIOR_HOME || 
               currentView === AppView.SENIOR_HOME || 
               currentView === AppView.STARTUP_HOME || 
-              currentView === AppView.INHOUSE_HOME
-            ) && <Dashboard user={user} setView={navigateTo} />}
+              currentView === AppView.INHOUSE_HOME) && (
+              <Dashboard user={user} setView={navigateTo} />
+            )}
 
-            {/* Sub-Views */}
+            {/* Core Shared Tools */}
+            {currentView === AppView.DOC_INTELLIGENCE && <Summarizer />}
+            {currentView === AppView.DRAFTING_STUDIO && <DraftingRoom />}
+            {currentView === AppView.RESEARCH_HUB && <ChatAssistant />}
+
+            {/* Role Specific Views */}
+            {currentView === AppView.STUDENT_BARE_ACTS && <LearningHub />}
+            {currentView === AppView.STUDENT_MOOT && <MootToolkit />}
             {currentView === AppView.INHOUSE_MATTERS && <MattersPage />}
             {currentView === AppView.JUNIOR_PROCEDURES && <BoardTracker />}
-            {/* Additional page wiring for other tabs can go here */}
+            
+            {/* General Pages */}
+            {currentView === AppView.PROFILE && <Profile />}
+            {currentView === AppView.SETTINGS && <Settings />}
+            {currentView === AppView.PRIVACY && <Privacy />}
+            {currentView === AppView.LEGAL_TERMS && <Legal />}
+            {currentView === AppView.BILLING && <Billing />}
           </div>
         </main>
       </div>
